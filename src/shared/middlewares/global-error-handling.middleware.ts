@@ -2,6 +2,7 @@ import { ErrorRequestHandler } from "express";
 import { CustomError } from "../errors/custom-error";
 import { Prisma } from "@prisma/client";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
+import { ValidationError } from "../errors";
 
 // eslint-disable-next-line
 export const globalErrorHandlingMiddleware: ErrorRequestHandler = (
@@ -50,7 +51,6 @@ export const globalErrorHandlingMiddleware: ErrorRequestHandler = (
   // JWT expired token
   else if (err.name === "TokenExpiredError")
     res.status(401).json({ errors: [{ message: "expired token" }] });
-  // Mongo validation
   else if (err.name === "ValidationError") {
     res.status(400).json({
       errors: [{ message: `Validation error : ${Object.values(err.errors)}` }],

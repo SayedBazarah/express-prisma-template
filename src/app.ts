@@ -1,5 +1,5 @@
 import cors from "cors";
-import express from "express";
+import express, { Request, Response } from "express";
 import helmet from "helmet";
 import morgan from "morgan";
 
@@ -7,7 +7,7 @@ import {
   globalErrorHandlingMiddleware,
   globalNotFoundMiddleware,
 } from "./shared/middlewares";
-import { prisma } from "./shared/prisma/client";
+import { signUpValidator } from "./modules/user/presentation/sign-up.validator";
 
 const app = express();
 
@@ -16,14 +16,10 @@ app.use(helmet());
 app.use(cors());
 app.use(express.json());
 
-app.get("/", async (req, res) => {
+app.get("/", signUpValidator, async (req: Request, res: Response) => {
   console.log("--- Log ---");
-  await prisma.$disconnect();
-  const users = await prisma.user.findMany({
-    where: { email: "xxllljojlj" as any },
-  });
 
-  res.json(users);
+  res.json({ message: "Hello World" });
 });
 
 app.use(globalNotFoundMiddleware);
