@@ -7,7 +7,7 @@ import {
   globalErrorHandlingMiddleware,
   globalNotFoundMiddleware,
 } from "./shared/middlewares";
-import { BadRequestError, NotFoundError } from "./shared/errors";
+import { prisma } from "./shared/prisma/client";
 
 const app = express();
 
@@ -16,8 +16,14 @@ app.use(helmet());
 app.use(cors());
 app.use(express.json());
 
-app.get("/", (req, res) => {
-  res.send("Hello World!");
+app.get("/", async (req, res) => {
+  console.log("--- Log ---");
+  await prisma.$disconnect();
+  const users = await prisma.user.findMany({
+    where: { email: "xxllljojlj" as any },
+  });
+
+  res.json(users);
 });
 
 app.use(globalNotFoundMiddleware);

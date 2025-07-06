@@ -1,5 +1,7 @@
 import { ErrorRequestHandler } from "express";
 import { CustomError } from "../errors/custom-error";
+import { Prisma } from "@prisma/client";
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 
 // eslint-disable-next-line
 export const globalErrorHandlingMiddleware: ErrorRequestHandler = (
@@ -20,7 +22,29 @@ export const globalErrorHandlingMiddleware: ErrorRequestHandler = (
     res.status(400).json({
       errors: [{ message: `${Object.keys(err.keyPattern)} is already exists` }],
     });
-  // JWT invalid token
+  // Prisma error
+  else if (err instanceof Prisma.PrismaClientValidationError) {
+    res.status(400).json({
+      errors: [{ message: `Prisma Validation error : ${err.message}` }],
+    });
+  } else if (err instanceof Prisma.PrismaClientKnownRequestError) {
+    const prismaError = err as PrismaClientKnownRequestError;
+    if (prismaError.code === "P2002") {
+      res.status(400).json({
+        errors: [{ message: `${prismaError?.meta?.target} is already exists` }],
+      });
+    } else if (prismaError.code === "P2025") {
+      res.status(400).json({
+        errors: [
+          { message: `Validation error : ${prismaError?.meta?.target}` },
+        ],
+      });
+    } else {
+      res.status(500).json({ errors: [{ message: "server error" }] });
+    }
+  }
+
+  //   // JWT invalid token
   else if (err.name === "JsonWebTokenError")
     res.status(401).json({ errors: [{ message: "invalid token" }] });
   // JWT expired token

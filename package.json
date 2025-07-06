@@ -1,7 +1,7 @@
 {
   "scripts": {
     "start": "node --env-file=.env dist/src/index.js",
-    "dev": "tsx watch --env-file=.env src/index.ts",
+    "dev": "ts-node-dev --respawn --transpile-only src/index.ts .env.development",
     "build": "tsc",
     "lint": "eslint --fix src test",
     "test": "vitest run",
@@ -23,7 +23,10 @@
     "zod": "^3.25.74"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
+    "@types/morgan": "^1.9.10",
+    "prisma": "^6.11.1",
     "tsx": "^4.20.3"
   }
 }

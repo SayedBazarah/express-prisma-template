@@ -6,10 +6,156 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// ENUMS
+// ============================================================================
+enum SubscriptionStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+  SUSPENDED
+}
+
+// ============================================================================
+// ACCOUNT & ORGANIZATION MODELS
+// ============================================================================
+
+model Account {
+  id                String         @id @default(cuid())
+  name              String
+  logo              String?
+  government        String?
+  language          String         @default("ar")
+  timezone          String         @default("Africa/Cairo")
+  currency          String         @default("EGP")
+  
+  // Relations
+  users             User[]
+  subscriptions     Subscription[]
+  roles             Role[]
+  
+  // Timestamps
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  @@index([createdAt])
+}
+
+model Subscription {
+  id                String             @id @default(cuid())
+  accountId         String
+  plan              String
+  status            SubscriptionStatus @default(ACTIVE)
+  startDate         DateTime
+  endDate           DateTime
+  monthlyPrice      Float
+  features          Json?              // Store plan features as JSON
+
+  // Features
+  maxUsers          Int                @default(5)
+  
+  // Relations
+  account           Account            @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  
+  // Timestamps
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  @@index([accountId, status])
+  @@index([endDate])
+}
+
+// ============================================================================
+// USER MANAGEMENT MODELS
+// ============================================================================
+
+model User {
+  id          String  @id @default(cuid()) 
+
+  name              String
+  email             String   @unique
+  password          String
+  phone             String?  @unique
+  avatar            String?
+  isActive          Boolean  @default(true)
+  lastLoginAt       DateTime?
+  
+  // Role & Permissions
+  roleId            String?  // Reference to Role instead of enum
+  accountId         String
+  
+  // Relations
+  account           Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  role              Role?    @relation(fields: [roleId], references: [id])
+  
+  // Timestamps
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([accountId])
+  @@index([email])
+  @@index([isActive])
+  @@index([roleId])
+}
+
+model Role {
+  id                String        @id @default(cuid())
+  name              String        // e.g., "Owner", "Manager", "Cashier"
+  description       String?
+  isDefault         Boolean       @default(false)
+  
+  // Relations
+  accountId         String
+  account           Account       @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  users             User[]
+  permissions       RolePermission[]
+  
+  // Timestamps
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@index([accountId])
+  @@index([name])
+}
+
+model Permission {
+  id                String          @id @default(cuid())
+  code              String          @unique // e.g., "create_item", "read_orders", "manage_users"
+  name              String          // Human readable name
+  description       String?
+  module            String          // e.g., "menu", "orders", "users", "inventory"
+  
+  // Relations
+  roles             RolePermission[]
+  
+  // Timestamps
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@index([code])
+  @@index([module])
+}
+
+model RolePermission {
+  id                String      @id @default(cuid())
+  
+  // Relations
+  roleId            String
+  role              Role        @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permissionId      String
+  permission        Permission  @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  
+  // Timestamps
+  createdAt         DateTime    @default(now())
+
+  @@unique([roleId, permissionId])
+  @@index([roleId])
+  @@index([permissionId])
 }

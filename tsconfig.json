@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "target": "ES2020", // Modern JS output
+    "module": "CommonJS", // Node-compatible module system
+    "moduleResolution": "node",
+    "lib": ["ES2020", "DOM"],
+    "allowJs": false,
+    "outDir": "dist", // Compiled files
+    "rootDir": "src", // Source code location
+    "strict": true, // Enable all strict type checks
+    "esModuleInterop": true, // For default imports
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "noImplicitAny": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": false,
+    "baseUrl": "src", // Allows absolute imports like "@/modules/user"
+    "paths": {
+      "@/*": ["*"]
+    }
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "dist"]
+}
