@@ -1,8 +1,9 @@
 import { ErrorRequestHandler } from "express";
-import { CustomError } from "../errors/custom-error";
+import { CustomError } from "../errors/custom.error";
 import { Prisma } from "@prisma/client";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import { ValidationError } from "../errors";
+import { ClientClosedError } from "redis";
 
 // eslint-disable-next-line
 export const globalErrorHandlingMiddleware: ErrorRequestHandler = (
@@ -12,7 +13,12 @@ export const globalErrorHandlingMiddleware: ErrorRequestHandler = (
   next
 ) => {
   if (process.env.NODE_ENV === "development") console.log(err);
-
+  console.log("--- Log ---");
+  console.log({
+    err: err instanceof ClientClosedError,
+    err_name: err.name,
+    validator_errors: err instanceof ValidationError,
+  });
   // Custom Error
   if (err instanceof CustomError) {
     res.status(err.statusCode).json({ errors: err.serializeError() });
@@ -47,16 +53,21 @@ export const globalErrorHandlingMiddleware: ErrorRequestHandler = (
 
   //   // JWT invalid token
   else if (err.name === "JsonWebTokenError")
-    res.status(401).json({ errors: [{ message: "invalid token" }] });
+    res.status(401).json({ errors: [{ message: "Error: invalid token" }] });
   // JWT expired token
   else if (err.name === "TokenExpiredError")
-    res.status(401).json({ errors: [{ message: "expired token" }] });
+    res.status(401).json({ errors: [{ message: "Error: expired token" }] });
   else if (err.name === "ValidationError") {
     res.status(400).json({
       errors: [{ message: `Validation error : ${Object.values(err.errors)}` }],
     });
   }
 
+  // Redis error
+  else if (err instanceof ClientClosedError)
+    res
+      .status(500)
+      .json({ errors: [{ message: "Error: redis connection closed" }] });
   // un handled error
-  else res.status(500).json({ errors: [{ message: "server error" }] });
+  else res.status(500).json({ errors: [{ message: "Error: server error" }] });
 };

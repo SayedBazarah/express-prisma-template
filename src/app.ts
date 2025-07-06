@@ -1,5 +1,5 @@
 import cors from "cors";
-import express, { Request, Response } from "express";
+import express from "express";
 import helmet from "helmet";
 import morgan from "morgan";
 
@@ -7,7 +7,7 @@ import {
   globalErrorHandlingMiddleware,
   globalNotFoundMiddleware,
 } from "./shared/middlewares";
-import { signUpValidator } from "./modules/user/presentation/sign-up.validator";
+import { redisClient } from "./shared/redis/client";
 
 const app = express();
 
@@ -16,10 +16,10 @@ app.use(helmet());
 app.use(cors());
 app.use(express.json());
 
-app.get("/", signUpValidator, async (req: Request, res: Response) => {
-  console.log("--- Log ---");
+app.get("/", async (req, res) => {
+  const message = await redisClient.get("test");
 
-  res.json({ message: "Hello World" });
+  res.json({ message });
 });
 
 app.use(globalNotFoundMiddleware);
