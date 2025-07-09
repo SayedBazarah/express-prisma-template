@@ -1,3 +1,4 @@
+import "dotenv/config";
 import app from "./app";
 import { env } from "./env";
 import { checkPrismaConnection } from "./shared/prisma/checkConnection";
@@ -7,8 +8,8 @@ import { redisClient } from "./shared/redis/client";
 
 const port = env.PORT;
 const server = app.listen(port, async () => {
-  await checkPrismaConnection();
   await checkRedisConnection();
+  await checkPrismaConnection();
 
   /* eslint-disable no-console */
   console.log(`Listening: http://localhost:${port}`);

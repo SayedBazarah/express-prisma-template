@@ -4,6 +4,7 @@ import { Prisma } from "@prisma/client";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import { ValidationError } from "../errors";
 import { ClientClosedError } from "redis";
+import { NotAuthenticatedError } from "../errors/not-authenticated.error";
 
 // eslint-disable-next-line
 export const globalErrorHandlingMiddleware: ErrorRequestHandler = (
@@ -13,16 +14,16 @@ export const globalErrorHandlingMiddleware: ErrorRequestHandler = (
   next
 ) => {
   if (process.env.NODE_ENV === "development") console.log(err);
+  console.log("--- Global Error Handling Middleware ---");
   console.log("--- Log ---");
   console.log({
-    err: err instanceof ClientClosedError,
-    err_name: err.name,
-    validator_errors: err instanceof ValidationError,
+    err,
   });
   // Custom Error
   if (err instanceof CustomError) {
     res.status(err.statusCode).json({ errors: err.serializeError() });
   }
+  //
 
   // Mongo not found
   else if (err.name === "MongoServerError" && err.code == "11000")
@@ -49,6 +50,11 @@ export const globalErrorHandlingMiddleware: ErrorRequestHandler = (
     } else {
       res.status(500).json({ errors: [{ message: "server error" }] });
     }
+  }
+
+  // Not authenticated/
+  else if (err instanceof NotAuthenticatedError) {
+    res.status(401).json({ errors: [{ message: "Error: not authenticated" }] });
   }
 
   //   // JWT invalid token

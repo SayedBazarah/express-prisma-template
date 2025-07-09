@@ -23,6 +23,11 @@ enum SubscriptionStatus {
   SUSPENDED
 }
 
+enum SubscriptionPlan {
+  TRIAL
+  BASIC
+  PREMIUM
+}
 // ============================================================================
 // ACCOUNT & ORGANIZATION MODELS
 // ============================================================================
@@ -51,15 +56,15 @@ model Account {
 model Subscription {
   id                String             @id @default(cuid())
   accountId         String
-  plan              String
+  plan              SubscriptionPlan   @default(TRIAL)
   status            SubscriptionStatus @default(ACTIVE)
-  startDate         DateTime
-  endDate           DateTime
+  startDate         DateTime           @default(now())
+  endDate           DateTime           @default(dbgenerated("(NOW() + INTERVAL '30 days')")) // PostgreSQL syntax
   monthlyPrice      Float
   features          Json?              // Store plan features as JSON
 
   // Features
-  maxUsers          Int                @default(5)
+  maxUsers          Int                @default(1)
   
   // Relations
   account           Account            @relation(fields: [accountId], references: [id], onDelete: Cascade)
@@ -81,21 +86,25 @@ model User {
 
   name              String
   email             String   @unique
-  password          String
+  password          String?
   phone             String?  @unique
   avatar            String?
   isActive          Boolean  @default(true)
   lastLoginAt       DateTime?
   
-  // Role & Permissions
+  // ✅ OAuth Fields
+  provider    String   @default("local") // e.g., 'local', 'google'
+  providerId  String?                    // e.g., Google ID (sub)
+
+  // ✅ Role & Permissions
   roleId            String?  // Reference to Role instead of enum
   accountId         String
   
-  // Relations
+  // ✅ Relations
   account           Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
   role              Role?    @relation(fields: [roleId], references: [id])
   
-  // Timestamps
+  // ✅ Timestamps
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
@@ -103,6 +112,9 @@ model User {
   @@index([email])
   @@index([isActive])
   @@index([roleId])
+  @@index([provider, providerId])
+  @@unique([provider, providerId]) // ✅ Fix: composite unique key instead of providerId alone
+
 }
 
 model Role {
