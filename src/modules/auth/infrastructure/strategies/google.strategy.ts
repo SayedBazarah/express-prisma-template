@@ -1,6 +1,5 @@
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import { env } from "@/env";
-import { prisma } from "@/shared/prisma/client";
 import { PrismaUserRepository } from "../prisma/user-repository";
 import { User } from "@prisma/client";
 

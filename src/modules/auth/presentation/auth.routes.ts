@@ -3,11 +3,14 @@ import passport from "passport";
 import {
   currentUserHandler,
   signInHandler,
+  signOutHandler,
   signUpHandler,
 } from "./auth.controller";
 
 import * as validators from "./validators";
 import { env } from "@/env";
+import { isAuthenticated } from "@/shared/guards/isAuthenticated";
+import { localStrategyMiddleware } from "./middlewares/local-strategy.middleware";
 
 const router = Router();
 
@@ -17,7 +20,7 @@ router.post("/sign-up", validators.signUpValidator, signUpHandler);
 router.post(
   "/sign-in",
   validators.signInValidator,
-  passport.authenticate("local"),
+  localStrategyMiddleware,
   signInHandler
 );
 
@@ -29,19 +32,14 @@ router.get(
 
 router.get(
   "/google/callback",
-  passport.authenticate("google", { failureRedirect: env.GOOGLE_CALLBACK_URL }),
+  passport.authenticate("google", { failureRedirect: env.FRONT_URL }),
   signInHandler
 );
 
 // Auth info
-router.get("/me", currentUserHandler);
+router.get("/me", isAuthenticated, currentUserHandler);
 
 // Logout
-router.get("/logout", (req, res) => {
-  req.logout((err) => {
-    if (err) return res.status(500).json({ error: "Logout failed" });
-    res.json({ message: "Logged out" });
-  });
-});
+router.post("/sign-out", isAuthenticated, signOutHandler);
 
 export default router;

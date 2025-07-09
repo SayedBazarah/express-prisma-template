@@ -90,6 +90,7 @@ model User {
   phone             String?  @unique
   avatar            String?
   isActive          Boolean  @default(true)
+  isCompleted       Boolean  @default(false)
   lastLoginAt       DateTime?
   
   // ✅ OAuth Fields

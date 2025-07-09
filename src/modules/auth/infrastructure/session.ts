@@ -24,6 +24,7 @@ export const sessionMiddleware = session({
   cookie: {
     secure: false, // use true if HTTPS
     maxAge: 1000 * 60 * 60 * 24, // 1 day
+    sameSite: "lax", // ✅ allows cross-origin redirect/cookie
   },
 });
 

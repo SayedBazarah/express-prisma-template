@@ -5,6 +5,7 @@ const envSchema = z.object({
     .enum(["development", "production", "test"])
     .default("development"),
   PORT: z.coerce.number().default(3000),
+  FRONT_URL: z.string().optional(),
   REDIS_URL: z.string().default("redis://localhost:6379"),
   GOOGLE_CLIENT_ID: z.string().optional(),
   GOOGLE_CLIENT_SECRET: z.string().optional(),

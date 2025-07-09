@@ -16,7 +16,13 @@ import AppRoute from "./shared/global-route";
 
 const app = express();
 
-app.use(cors());
+app.use(
+  cors({
+    origin: "http://localhost:8083",
+    credentials: true,
+  })
+);
+
 app.use(express.json());
 app.use(helmet());
 app.use(morgan("dev"));

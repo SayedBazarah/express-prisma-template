@@ -2,7 +2,7 @@ import { Request, RequestHandler } from "express";
 import { NotAuthenticatedError } from "@/shared/errors/not-authenticated.error";
 import { SignupUseCase } from "../application/use-cases/sign-up";
 import { TokenService } from "../infrastructure/auth.service";
-import { redisClient } from "@/shared/redis/client";
+import { BadRequestError } from "@/shared/errors";
 
 export const signUpHandler: RequestHandler = async (
   req: Request,
@@ -34,24 +34,30 @@ export const signUpHandler: RequestHandler = async (
 };
 
 export const signInHandler: RequestHandler = async (req, res, next) => {
-  console.log("--- Sign In Handler ---");
   const { accessToken, refreshToken } = TokenService.generateTokens({
     userId: req.user?.id,
   });
 
-  // Add session to redis
-  await redisClient.sadd(`user-sessions:${req.user?.id}`, req.sessionID);
-
-  req.session.refreshToken = refreshToken;
+  // ✅ Store tokens in session
   req.session.accessToken = accessToken;
+  req.session.refreshToken = refreshToken;
 
-  res.json({ message: "Logged in" });
+  // Save session
+  req.session.save((err) => {
+    if (err) {
+      console.error("Failed to save session:", err);
+      throw new BadRequestError("Failed to save session");
+    }
+
+    res.status(200).json({ message: "Signin successful" });
+  });
 };
 
 export const currentUserHandler: RequestHandler = (req, res, next) => {
   if (!req.user) {
     res.status(401).json({ error: "Not logged in" });
   }
+
   res.json(req.user);
 };
 
@@ -70,4 +76,11 @@ export const refreshTokenHandler: RequestHandler = (
   } catch (err) {
     throw new NotAuthenticatedError("Error: not authenticated");
   }
+};
+
+export const signOutHandler: RequestHandler = (req, res) => {
+  req.session.destroy((err) => {
+    if (err) throw new BadRequestError("Error: Logout failed");
+    res.json({ message: "Logged out" });
+  });
 };

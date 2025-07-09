@@ -1,8 +1,14 @@
 import { prisma } from "@/shared/prisma/client";
 import { SignUpDTO } from "../../application/dtos/sign-up";
-import { User } from "../../domain/User";
+import { User } from "../../domain/user";
 
 export class PrismaUserRepository {
+  async findById(id: string): Promise<User | null> {
+    const user = await prisma.user.findUnique({
+      where: { id },
+    });
+    return user ? new User(user) : null;
+  }
   async findByEmail(email: string): Promise<User | null> {
     const user = await prisma.user.findUnique({
       where: { email },

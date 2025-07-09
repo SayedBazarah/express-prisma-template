@@ -2,14 +2,15 @@ import { Request, Response, NextFunction } from "express";
 import { TokenExpiredError } from "jsonwebtoken";
 import { NotAuthenticatedError } from "../errors/not-authenticated.error";
 import { TokenService } from "@/modules/auth/infrastructure/auth.service";
+import { PrismaUserRepository } from "@/modules/auth/infrastructure/prisma/user-repository";
+import { User } from "@prisma/client";
 
-export const accessTokenGuard = (
+export const isAuthenticated = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
   const session = req.session;
-
   if (!session || !session.accessToken || !session.refreshToken) {
     throw new NotAuthenticatedError("Error: not authenticated");
   }
@@ -17,12 +18,24 @@ export const accessTokenGuard = (
   try {
     // Try verifying access token
     const decoded = TokenService.verifyAccessToken(session.accessToken);
+
+    const userRepository = new PrismaUserRepository();
+    let user;
+    if (
+      typeof decoded === "object" &&
+      decoded !== null &&
+      "userId" in decoded
+    ) {
+      user = await userRepository.findById(`${(decoded as any).userId}`);
+    } else {
+      throw new NotAuthenticatedError("Error: invalid token payload");
+    }
+
+    if (!user) {
+      throw new NotAuthenticatedError("Error: user not found");
+    }
     // Attach user payload to request (optional)
-    console.log("--- Session ---");
-    console.log({
-      user: req.user,
-    });
-    req.user = decoded as any;
+    req.user = user.getUser() as User;
     return next();
   } catch (err) {
     // Check if error is due to expiration
@@ -31,11 +44,7 @@ export const accessTokenGuard = (
         // Verify refresh token and generate a new access token
         const payload = TokenService.verifyRefreshToken(session.refreshToken);
         const { accessToken } = TokenService.generateTokens(payload);
-        console.log({
-          user: req.user,
-          payload,
-          accessToken,
-        });
+
         // Update session
         req.session.accessToken = accessToken;
         req.user = payload as any;
